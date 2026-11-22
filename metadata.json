@@ -1,0 +1,8 @@
+{
+  "name": "Atelier Blush — Celebration Event Planner",
+  "description": "Modern celebratory event planner with automated multi-currency budgeting, real-time cloud guest RSVPs, AI planning assistant, live venue setup previews, and PDF coordination export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

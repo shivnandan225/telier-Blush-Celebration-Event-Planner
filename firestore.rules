@@ -1,0 +1,236 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Reusable Global Primitives ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUid(uid) {
+      return uid is string && uid.size() >= 1 && uid.size() <= 128 && uid.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isEventOwner(eventId) {
+      return isVerifiedUser() &&
+        exists(/databases/$(database)/documents/events/$(eventId)) &&
+        get(/databases/$(database)/documents/events/$(eventId)).data.ownerId == request.auth.uid;
+    }
+
+    // --- Validation Blueprints ---
+    function isValidEvent(data) {
+      return data.keys().hasAll([
+        'id', 'ownerId', 'title', 'hostName', 'eventType', 'eventDate',
+        'venueName', 'dressCode', 'currencyCode', 'totalBudget', 'estimatedGuests',
+        'selectedThemeId', 'venueTableStyle', 'showStage', 'showDanceFloor',
+        'showBuffet', 'showPhotoBooth', 'floralDensity', 'isPublicRsvp',
+        'costSavingTips', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'ownerId', 'title', 'hostName', 'eventType', 'eventDate',
+        'venueName', 'dressCode', 'currencyCode', 'totalBudget', 'estimatedGuests',
+        'selectedThemeId', 'venueTableStyle', 'showStage', 'showDanceFloor',
+        'showBuffet', 'showPhotoBooth', 'floralDensity', 'isPublicRsvp',
+        'costSavingTips', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.id) &&
+      isValidUid(data.ownerId) &&
+      data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+      data.hostName is string && data.hostName.size() >= 1 && data.hostName.size() <= 100 &&
+      data.eventType in ['wedding', 'birthday', 'corporate', 'shower', 'custom'] &&
+      data.eventDate is string && data.eventDate.size() <= 32 &&
+      data.venueName is string && data.venueName.size() <= 140 &&
+      data.dressCode is string && data.dressCode.size() <= 80 &&
+      data.currencyCode in ['USD', 'INR', 'EUR', 'GBP', 'AUD', 'CAD', 'AED', 'SGD', 'JPY'] &&
+      data.totalBudget is number && data.totalBudget >= 0 && data.totalBudget <= 1000000000 &&
+      data.estimatedGuests is number && data.estimatedGuests >= 1 && data.estimatedGuests <= 10000 &&
+      isValidId(data.selectedThemeId) &&
+      data.venueTableStyle in ['round', 'imperial', 'cocktail', 'theater'] &&
+      data.showStage is bool &&
+      data.showDanceFloor is bool &&
+      data.showBuffet is bool &&
+      data.showPhotoBooth is bool &&
+      data.floralDensity in ['minimal', 'balanced', 'lush'] &&
+      data.isPublicRsvp is bool &&
+      data.costSavingTips is list && data.costSavingTips.size() <= 10 &&
+      (data.costSavingTips.size() == 0 || (data.costSavingTips[0] is string && data.costSavingTips[0].size() <= 280)) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidBudgetItem(data, eventId) {
+      return data.keys().hasAll([
+        'id', 'eventId', 'ownerId', 'category', 'title', 'pricingMode',
+        'unitCost', 'allocatedAmount', 'actualSpent', 'notes', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'eventId', 'ownerId', 'category', 'title', 'pricingMode',
+        'unitCost', 'allocatedAmount', 'actualSpent', 'notes', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.id) &&
+      data.eventId == eventId &&
+      isValidUid(data.ownerId) &&
+      data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+      data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+      data.pricingMode in ['fixed', 'per_guest'] &&
+      data.unitCost is number && data.unitCost >= 0 && data.unitCost <= 100000000 &&
+      data.allocatedAmount is number && data.allocatedAmount >= 0 && data.allocatedAmount <= 1000000000 &&
+      data.actualSpent is number && data.actualSpent >= 0 && data.actualSpent <= 1000000000 &&
+      data.notes is string && data.notes.size() <= 300 &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidRsvp(data, eventId) {
+      return data.keys().hasAll([
+        'id', 'eventId', 'ownerId', 'guestName', 'guestEmail', 'status',
+        'partySize', 'mealChoice', 'dietaryNotes', 'source', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'eventId', 'ownerId', 'guestName', 'guestEmail', 'status',
+        'partySize', 'mealChoice', 'dietaryNotes', 'source', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.id) &&
+      data.eventId == eventId &&
+      isValidUid(data.ownerId) &&
+      data.guestName is string && data.guestName.size() >= 1 && data.guestName.size() <= 100 &&
+      data.guestEmail is string && data.guestEmail.size() <= 140 &&
+      data.status in ['attending', 'declined', 'pending'] &&
+      data.partySize is number && data.partySize >= 1 && data.partySize <= 20 &&
+      data.mealChoice is string && data.mealChoice.size() <= 60 &&
+      data.dietaryNotes is string && data.dietaryNotes.size() <= 240 &&
+      data.source in ['public_link', 'organizer'] &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+    match /events/{eventId} {
+      allow get: if isValidId(eventId) && (
+        existing().isPublicRsvp == true ||
+        (isVerifiedUser() && existing().ownerId == request.auth.uid)
+      );
+
+      allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(eventId) &&
+        isValidEvent(incoming()) &&
+        incoming().id == eventId &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(eventId) &&
+        isValidEvent(incoming()) &&
+        existing().ownerId == request.auth.uid &&
+        incoming().id == existing().id &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'hostName', 'eventType', 'eventDate', 'venueName', 'dressCode',
+          'currencyCode', 'totalBudget', 'estimatedGuests', 'selectedThemeId',
+          'venueTableStyle', 'showStage', 'showDanceFloor', 'showBuffet',
+          'showPhotoBooth', 'floralDensity', 'isPublicRsvp', 'costSavingTips', 'updatedAt'
+        ]);
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(eventId) &&
+        existing().ownerId == request.auth.uid;
+
+      match /budgetItems/{itemId} {
+        allow get: if isValidId(eventId) && isValidId(itemId) && isEventOwner(eventId);
+
+        allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+
+        allow create: if isValidId(eventId) &&
+          isValidId(itemId) &&
+          isEventOwner(eventId) &&
+          isValidBudgetItem(incoming(), eventId) &&
+          incoming().id == itemId &&
+          incoming().ownerId == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time;
+
+        allow update: if isValidId(eventId) &&
+          isValidId(itemId) &&
+          isEventOwner(eventId) &&
+          isValidBudgetItem(incoming(), eventId) &&
+          incoming().id == existing().id &&
+          incoming().eventId == existing().eventId &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'category', 'title', 'pricingMode', 'unitCost', 'allocatedAmount',
+            'actualSpent', 'notes', 'updatedAt'
+          ]);
+
+        allow delete: if isValidId(eventId) && isValidId(itemId) && isEventOwner(eventId);
+      }
+
+      match /rsvps/{rsvpId} {
+        allow get: if isValidId(eventId) && isValidId(rsvpId) && isEventOwner(eventId);
+
+        allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+
+        allow create: if isValidId(eventId) &&
+          isValidId(rsvpId) &&
+          isValidRsvp(incoming(), eventId) &&
+          incoming().id == rsvpId &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time && (
+            (
+              isEventOwner(eventId) &&
+              incoming().ownerId == request.auth.uid
+            ) || (
+              incoming().source == 'public_link' &&
+              exists(/databases/$(database)/documents/events/$(eventId)) &&
+              get(/databases/$(database)/documents/events/$(eventId)).data.isPublicRsvp == true &&
+              incoming().ownerId == get(/databases/$(database)/documents/events/$(eventId)).data.ownerId
+            )
+          );
+
+        allow update: if isValidId(eventId) &&
+          isValidId(rsvpId) &&
+          isEventOwner(eventId) &&
+          isValidRsvp(incoming(), eventId) &&
+          incoming().id == existing().id &&
+          incoming().eventId == existing().eventId &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().source == existing().source &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'guestName', 'guestEmail', 'status', 'partySize',
+            'mealChoice', 'dietaryNotes', 'updatedAt'
+          ]);
+
+        allow delete: if isVerifiedUser() && isEventOwner(eventId) && isValidId(rsvpId);
+      }
+    }
+  }
+}

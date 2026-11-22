@@ -1,0 +1,305 @@
+{
+  "entities": {
+    "CelebrationEvent": {
+      "title": "CelebrationEvent",
+      "description": "Primary event workspace configuration, budget settings, theme selection, and live venue layout parameters.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique event identifier."
+        },
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the event organizer."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140,
+          "description": "Display name of the celebration."
+        },
+        "hostName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Host or couple name shown on invitations."
+        },
+        "eventType": {
+          "type": "string",
+          "enum": ["wedding", "birthday", "corporate", "shower", "custom"],
+          "description": "Type of celebration."
+        },
+        "eventDate": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "ISO date string for the event."
+        },
+        "venueName": {
+          "type": "string",
+          "maxLength": 140,
+          "description": "Venue or location name."
+        },
+        "dressCode": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Guest attire guidance."
+        },
+        "currencyCode": {
+          "type": "string",
+          "enum": ["USD", "INR", "EUR", "GBP", "AUD", "CAD", "AED", "SGD", "JPY"],
+          "description": "ISO currency code for automated budget calculations."
+        },
+        "totalBudget": {
+          "type": "number",
+          "description": "Target overall budget in the selected currency."
+        },
+        "estimatedGuests": {
+          "type": "number",
+          "description": "Expected guest headcount before RSVPs finalize."
+        },
+        "selectedThemeId": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "ID of the chosen visual setup theme."
+        },
+        "venueTableStyle": {
+          "type": "string",
+          "enum": ["round", "imperial", "cocktail", "theater"],
+          "description": "Selected seating configuration in the live venue setup preview."
+        },
+        "showStage": {
+          "type": "boolean",
+          "description": "Whether the stage/ceremony focal point is enabled in the venue preview."
+        },
+        "showDanceFloor": {
+          "type": "boolean",
+          "description": "Whether the dance floor is enabled in the venue preview."
+        },
+        "showBuffet": {
+          "type": "boolean",
+          "description": "Whether the catering/buffet station is enabled in the venue preview."
+        },
+        "showPhotoBooth": {
+          "type": "boolean",
+          "description": "Whether the photo backdrop lounge is enabled in the venue preview."
+        },
+        "floralDensity": {
+          "type": "string",
+          "enum": ["minimal", "balanced", "lush"],
+          "description": "Visual floral/decor density in the venue setup preview."
+        },
+        "isPublicRsvp": {
+          "type": "boolean",
+          "description": "Allows guests with the shareable link to read invitation metadata and submit RSVPs."
+        },
+        "costSavingTips": {
+          "type": "array",
+          "description": "Up to 10 tailored cost-saving recommendations."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "title",
+        "hostName",
+        "eventType",
+        "eventDate",
+        "venueName",
+        "dressCode",
+        "currencyCode",
+        "totalBudget",
+        "estimatedGuests",
+        "selectedThemeId",
+        "venueTableStyle",
+        "showStage",
+        "showDanceFloor",
+        "showBuffet",
+        "showPhotoBooth",
+        "floralDensity",
+        "isPublicRsvp",
+        "costSavingTips",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "BudgetItem": {
+      "title": "BudgetItem",
+      "description": "Individual budget category item supporting both fixed and per-guest RSVP-coupled pricing.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "eventId": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "pricingMode": {
+          "type": "string",
+          "enum": ["fixed", "per_guest"]
+        },
+        "unitCost": {
+          "type": "number"
+        },
+        "allocatedAmount": {
+          "type": "number"
+        },
+        "actualSpent": {
+          "type": "number"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "eventId",
+        "ownerId",
+        "category",
+        "title",
+        "pricingMode",
+        "unitCost",
+        "allocatedAmount",
+        "actualSpent",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "GuestRsvp": {
+      "title": "GuestRsvp",
+      "description": "Real-time guest RSVP record submitted either by an invited guest via public link or by the event organizer.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "eventId": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "guestName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "guestEmail": {
+          "type": "string",
+          "maxLength": 140
+        },
+        "status": {
+          "type": "string",
+          "enum": ["attending", "declined", "pending"]
+        },
+        "partySize": {
+          "type": "number"
+        },
+        "mealChoice": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "dietaryNotes": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "source": {
+          "type": "string",
+          "enum": ["public_link", "organizer"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "eventId",
+        "ownerId",
+        "guestName",
+        "guestEmail",
+        "status",
+        "partySize",
+        "mealChoice",
+        "dietaryNotes",
+        "source",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/events/{eventId}": {
+      "schema": {
+        "$ref": "#/entities/CelebrationEvent"
+      },
+      "description": "Top-level celebration event workspaces owned by authenticated organizers, with single-document public get access when isPublicRsvp is enabled."
+    },
+    "/events/{eventId}/budgetItems/{itemId}": {
+      "schema": {
+        "$ref": "#/entities/BudgetItem"
+      },
+      "description": "Budget items belonging to an event; strictly accessible only to the event owner."
+    },
+    "/events/{eventId}/rsvps/{rsvpId}": {
+      "schema": {
+        "$ref": "#/entities/GuestRsvp"
+      },
+      "description": "Guest RSVPs belonging to an event; owner has full CRUD/list access, while public link guests can create validated RSVPs when parent event isPublicRsvp is true."
+    }
+  }
+}
